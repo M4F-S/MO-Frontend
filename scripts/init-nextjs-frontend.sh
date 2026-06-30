@@ -1,0 +1,630 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# =============================================================================
+# init-nextjs-frontend.sh
+# Scaffolds a complete Next.js 15 + Tailwind CSS v4 + Framer Motion +
+# shadcn/ui + dark mode + Geist fonts project.
+# =============================================================================
+
+SCRIPT_NAME="$(basename "$0")"
+PROJECT_NAME="${1:-}"
+
+if [ -z "$PROJECT_NAME" ]; then
+  echo "Usage: $SCRIPT_NAME <project-name>"
+  exit 1
+fi
+
+if [ -d "$PROJECT_NAME" ]; then
+  echo "Error: Directory '$PROJECT_NAME' already exists."
+  exit 1
+fi
+
+echo "🚀 Scaffolding Next.js 15 frontend: $PROJECT_NAME"
+
+# ---------------------------------------------------------------------------
+# 1. Initialize Next.js 15 with App Router, TypeScript, ESLint, Tailwind, src
+# ---------------------------------------------------------------------------
+echo "📦 Creating Next.js project..."
+npx create-next-app@latest "$PROJECT_NAME" \
+  --typescript \
+  --eslint \
+  --tailwind \
+  --src-dir \
+  --app \
+  --no-turbopack \
+  --import-alias "@/*" \
+  --use-npm
+
+cd "$PROJECT_NAME"
+
+# ---------------------------------------------------------------------------
+# 2. Install additional dependencies
+# ---------------------------------------------------------------------------
+echo "📦 Installing additional packages..."
+npm install framer-motion gsap lucide-react geist
+npm install -D @types/node
+
+# ---------------------------------------------------------------------------
+# 3. Initialize shadcn/ui
+# ---------------------------------------------------------------------------
+echo "🎨 Initializing shadcn/ui..."
+npx shadcn@latest init -y -d
+
+# ---------------------------------------------------------------------------
+# 4. Configure tailwind.config.ts
+# ---------------------------------------------------------------------------
+echo "⚙️  Configuring Tailwind CSS..."
+cat > tailwind.config.ts << 'TAILWIND_EOF'
+import type { Config } from "tailwindcss";
+
+const config: Config = {
+  darkMode: "class",
+  content: [
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+      },
+      fontFamily: {
+        sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
+        mono: ["var(--font-geist-mono)", "monospace"],
+      },
+      boxShadow: {
+        glass: "0 8px 32px 0 rgba(31, 38, 135, 0.15)",
+        "glass-lg": "0 8px 32px 0 rgba(31, 38, 135, 0.25)",
+      },
+      animation: {
+        "fade-in": "fadeIn 0.5s ease-out forwards",
+        "slide-up": "slideUp 0.5s ease-out forwards",
+        "scale-in": "scaleIn 0.3s ease-out forwards",
+      },
+      keyframes: {
+        fadeIn: {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        slideUp: {
+          "0%": { opacity: "0", transform: "translateY(20px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        scaleIn: {
+          "0%": { opacity: "0", transform: "scale(0.95)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
+        },
+      },
+    },
+  },
+  plugins: [],
+};
+
+export default config;
+TAILWIND_EOF
+
+# ---------------------------------------------------------------------------
+# 5. Set up src/app/layout.tsx with dark mode provider, Geist font, metadata
+# ---------------------------------------------------------------------------
+echo "⚙️  Setting up layout.tsx..."
+mkdir -p src/app
+cat > src/app/layout.tsx << 'LAYOUT_EOF'
+import type { Metadata } from "next";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
+import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
+
+export const metadata: Metadata = {
+  title: "Create Next App",
+  description: "Generated by create-next-app",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={`${GeistSans.variable} ${GeistMono.variable} antialiased font-sans`}
+      >
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
+      </body>
+    </html>
+  );
+}
+LAYOUT_EOF
+
+# ---------------------------------------------------------------------------
+# 6. Create src/app/page.tsx with hero section using glassmorphism
+# ---------------------------------------------------------------------------
+echo "⚙️  Creating page.tsx..."
+cat > src/app/page.tsx << 'PAGE_EOF'
+import { Navbar } from "@/components/Navbar";
+import { HeroSection } from "@/components/HeroSection";
+import { FeatureCard } from "@/components/FeatureCard";
+import { Footer } from "@/components/Footer";
+import { Zap, Shield, Rocket } from "lucide-react";
+
+const features = [
+  {
+    icon: Zap,
+    title: "Lightning Fast",
+    description: "Optimized performance with Next.js 15 and the App Router for instant page loads.",
+  },
+  {
+    icon: Shield,
+    title: "Type Safe",
+    description: "Built with TypeScript from the ground up for robust, maintainable code.",
+  },
+  {
+    icon: Rocket,
+    title: "Production Ready",
+    description: "Best practices, ESLint, and modern tooling included out of the box.",
+  },
+];
+
+export default function Home() {
+  return (
+    <main className="min-h-screen bg-background text-foreground">
+      <Navbar />
+      <HeroSection />
+      <section className="py-24 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              Everything you need
+            </h2>
+            <p className="mt-4 text-lg text-muted-foreground">
+              A modern stack for building production-grade applications.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {features.map((feature) => (
+              <FeatureCard key={feature.title} {...feature} />
+            ))}
+          </div>
+        </div>
+      </section>
+      <Footer />
+    </main>
+  );
+}
+PAGE_EOF
+
+# ---------------------------------------------------------------------------
+# 7. Create components
+# ---------------------------------------------------------------------------
+echo "⚙️  Creating components..."
+mkdir -p src/components
+
+# Theme Provider
+cat > src/components/theme-provider.tsx << 'THEME_EOF'
+"use client";
+
+import * as React from "react";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { type ThemeProviderProps } from "next-themes";
+
+export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
+  return <NextThemesProvider {...props}>{children}</NextThemesProvider>;
+}
+THEME_EOF
+
+# Navbar
+cat > src/components/Navbar.tsx << 'NAVBAR_EOF'
+"use client";
+
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Moon, Sun, Menu, X } from "lucide-react";
+import { useTheme } from "next-themes";
+import Link from "next/link";
+
+export function Navbar() {
+  const { theme, setTheme } = useTheme();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  return (
+    <motion.nav
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50"
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          <Link href="/" className="text-xl font-bold tracking-tight">
+            Brand
+          </Link>
+
+          <div className="hidden md:flex items-center gap-8">
+            <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Features
+            </Link>
+            <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Pricing
+            </Link>
+            <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              About
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="p-2 rounded-lg hover:bg-accent transition-colors"
+              aria-label="Toggle theme"
+            >
+              <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            </button>
+
+            <button
+              className="md:hidden p-2 rounded-lg hover:bg-accent transition-colors"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="md:hidden border-t border-border/50 bg-background/95 backdrop-blur-xl"
+          >
+            <div className="px-4 py-4 space-y-3">
+              <Link href="#" className="block text-sm text-muted-foreground hover:text-foreground">Features</Link>
+              <Link href="#" className="block text-sm text-muted-foreground hover:text-foreground">Pricing</Link>
+              <Link href="#" className="block text-sm text-muted-foreground hover:text-foreground">About</Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.nav>
+  );
+}
+NAVBAR_EOF
+
+# HeroSection
+cat > src/components/HeroSection.tsx << 'HERO_EOF'
+"use client";
+
+import { motion } from "framer-motion";
+import { ArrowRight } from "lucide-react";
+
+export function HeroSection() {
+  return (
+    <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-32 overflow-hidden">
+      {/* Background gradient */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-background" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-primary/10 rounded-full blur-[120px]" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/50 border border-border/50 text-sm mb-8"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+            </span>
+            Next.js 15 + Tailwind v4 + shadcn/ui
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6"
+          >
+            Build faster with{" "}
+            <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              modern tools
+            </span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto"
+          >
+            A complete starter kit with dark mode, animations, and glassmorphism.
+            Ship production-ready UIs in minutes.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center"
+          >
+            <button className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors">
+              Get Started
+              <ArrowRight className="h-4 w-4" />
+            </button>
+            <button className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-border/50 bg-card hover:bg-accent transition-colors font-medium">
+              View on GitHub
+            </button>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+HERO_EOF
+
+# FeatureCard
+cat > src/components/FeatureCard.tsx << 'FEATURE_EOF'
+"use client";
+
+import { motion } from "framer-motion";
+import { LucideIcon } from "lucide-react";
+
+interface FeatureCardProps {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}
+
+export function FeatureCard({ icon: Icon, title, description }: FeatureCardProps) {
+  return (
+    <motion.div
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.2 }}
+      className="group relative p-6 rounded-2xl bg-card/50 border border-border/50 backdrop-blur-sm hover:bg-card/80 transition-colors"
+    >
+      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="relative">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 text-primary mb-4">
+          <Icon className="h-6 w-6" />
+        </div>
+        <h3 className="text-lg font-semibold mb-2">{title}</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+      </div>
+    </motion.div>
+  );
+}
+FEATURE_EOF
+
+# Footer
+cat > src/components/Footer.tsx << 'FOOTER_EOF'
+"use client";
+
+import Link from "next/link";
+
+export function Footer() {
+  return (
+    <footer className="border-t border-border/50 bg-background/50 backdrop-blur-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="text-sm text-muted-foreground">
+            © {new Date().getFullYear()} Brand. All rights reserved.
+          </div>
+          <div className="flex items-center gap-6">
+            <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Privacy
+            </Link>
+            <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Terms
+            </Link>
+            <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              GitHub
+            </Link>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+FOOTER_EOF
+
+# ---------------------------------------------------------------------------
+# 8. Update globals.css for CSS variables
+# ---------------------------------------------------------------------------
+echo "⚙️  Updating globals.css..."
+cat > src/app/globals.css << 'CSS_EOF'
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+CSS_EOF
+
+# ---------------------------------------------------------------------------
+# 9. Add .env.example
+# ---------------------------------------------------------------------------
+echo "⚙️  Creating .env.example..."
+cat > .env.example << 'ENV_EOF'
+# Next.js Environment Variables
+# Copy this file to .env.local and fill in your values
+
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+ENV_EOF
+
+# ---------------------------------------------------------------------------
+# 10. Update .gitignore
+# ---------------------------------------------------------------------------
+echo "⚙️  Updating .gitignore..."
+cat >> .gitignore << 'GITIGNORE_EOF'
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Local env files
+.env*.local
+GITIGNORE_EOF
+
+# ---------------------------------------------------------------------------
+# 11. Update next.config.js with image optimization
+# ---------------------------------------------------------------------------
+echo "⚙️  Configuring next.config.js..."
+cat > next.config.js << 'NEXT_EOF'
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  images: {
+    formats: ["image/webp", "image/avif"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+    ],
+  },
+  compress: true,
+  poweredByHeader: false,
+};
+
+module.exports = nextConfig;
+NEXT_EOF
+
+# ---------------------------------------------------------------------------
+# 12. Update package.json scripts
+# ---------------------------------------------------------------------------
+echo "⚙️  Updating package.json scripts..."
+node -e "
+const fs = require('fs');
+const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+pkg.scripts = {
+  ...pkg.scripts,
+  dev: 'next dev',
+  build: 'next build',
+  lint: 'next lint',
+  format: 'prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"',
+};
+fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+"
+
+# Install prettier for format script
+npm install -D prettier
+
+# ---------------------------------------------------------------------------
+# Done
+# ---------------------------------------------------------------------------
+echo ""
+echo "✅ Next.js project '$PROJECT_NAME' created successfully!"
+echo ""
+echo "Next steps:"
+echo "  cd $PROJECT_NAME"
+echo "  npm run dev"
+echo ""
