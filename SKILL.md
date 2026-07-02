@@ -51,6 +51,72 @@ When building full-stack applications, coordinate with `MO-Backend`:
 
 ## 5-Step Frontend Workflow
 
+## Obsidian Memory Layer
+
+When working on projects, persist knowledge to the Obsidian vault for cross-session recall. Coordinate with the `mo-graphify-obsidian-memory` skill.
+
+### Vault Location
+- **Per-project:** `{project-root}/obsidian/` or `~/Vaults/{project-name}/wiki/`
+- **General fallback:** `~/Vaults/general/wiki/`
+- Create the vault directory if it doesn't exist
+
+### What to Store
+- **Design decisions:** Component architecture, animation choices, color system, typography
+- **API integration notes:** Endpoint mapping, auth flow, error handling, TanStack Query patterns
+- **Component registry:** shadcn/ui components, custom components, reusable patterns
+- **Performance notes:** Lighthouse scores, optimization decisions, lazy loading strategy
+- **Deployment notes:** Vercel/Netlify config, env vars, CI/CD pipeline
+
+### Note Types & Naming
+
+| Note Type | Naming Pattern | Content |
+|-----------|---------------|---------|
+| **Frontend MOC** | `[[Project Name — Frontend]]` | Hub note linking all frontend decisions |
+| **Design System** | `[[Project Name — Design System]]` | Colors, typography, glassmorphism spec, spacing |
+| **API Integration** | `[[Project Name — Frontend API Contract]]` | Endpoint mapping, query keys, mutation patterns |
+| **Component Registry** | `[[Project Name — Components]]` | shadcn/ui registry, custom components, props API |
+| **Performance Log** | `[[Project Name — Performance]]` | Lighthouse scores, optimization decisions |
+| **ADR** | `[[Project Name — ADR-001 Topic]]` | Architecture Decision Record (framework, library choice) |
+
+### Linking Pattern
+```markdown
+<!-- In [[Project Name — Frontend]] MOC -->
+## Decisions
+- [[Project Name — Design System]]
+- [[Project Name — Frontend API Contract]]
+- [[Project Name — Components]]
+
+## Backend Coordination
+- [[Project Name — Backend]]
+- [[Project Name — API Contract]]
+```
+
+### Quick Operations
+```python
+# Create a frontend MOC
+create_moc(
+    title="Project Name — Frontend",
+    description="Frontend architecture and design decisions for Project Name.",
+    related_notes=["Project Name — Design System", "Project Name — Frontend API Contract"]
+)
+
+# Store a design decision
+create_note(
+    title="Project Name — ADR-003 Animation Library",
+    content="Decision: Use Framer Motion for component animations, GSAP for scroll-triggered effects.\n\nRationale: Framer Motion integrates seamlessly with React, GSAP ScrollTrigger handles complex pinned sections.\n\nStatus: accepted",
+    tags=["frontend", "decision", "animation"],
+    note_type="decision",
+    links=["Project Name — Frontend"]
+)
+```
+
+### Cross-Skill Linking
+- Always link frontend MOC to backend MOC: `[[Project Name — Backend]]`
+- Link API integration notes to backend API contract: `[[Project Name — API Contract]]`
+- Tag all notes with `["frontend", "project-name"]` for filtering
+
+## 5-Step Frontend Workflow
+
 ### Step 1: Setup & Configure
 - Initialize project: `npx create-next-app@latest` or `npm create vite@latest`
 - Install dependencies: Tailwind, Framer Motion, GSAP, shadcn/ui, Lucide icons
@@ -336,16 +402,12 @@ Run `scripts/optimize-performance.sh` for automated checks.
 
 - [ ] **Meta tags:** Title, description, canonical, viewport on every page
 - [ ] **Open Graph:** `og:title`, `og:description`, `og:image`, `og:url` for all shareable pages
-- [ ] **Twitter Cards:** `twitter:card`, `twitter:title`, `twitter:image`, `twitter:site`
+- [ ] **Twitter Cards:** `twitter:card`, `twitter:title`, `twitter:description`, `twitter:image`
 - [ ] **Structured data:** JSON-LD for articles, products, organizations, breadcrumbs
 - [ ] **Sitemap:** Auto-generated `/sitemap.xml` with all public URLs
 - [ ] **Robots.txt:** Allow public pages, block admin, API, and internal routes
 - [ ] **Semantic URLs:** Clean, descriptive URLs with hyphens, not IDs or hashes
 - [ ] **Performance:** Fast load times are a ranking factor — prioritize LCP and INP
-- [ ] **International SEO:** hreflang, alternate URLs, language-specific content
-- [ ] **Image SEO:** alt text, descriptive filenames, structured data for images
-- [ ] **Social sharing:** Open Graph image generation, dynamic meta tags
-- [ ] **Next.js SEO:** Metadata API, generateMetadata, dynamic metadata
 
 ## Boilerplate Scripts
 
